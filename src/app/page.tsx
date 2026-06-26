@@ -6,6 +6,9 @@ import { useProcessor } from "@/hooks/useProcessor";
 import { DropZone } from "@/components/upload/DropZone";
 import { PlatformSelector } from "@/components/upload/PlatformSelector";
 import { ModerationToggle } from "@/components/upload/ModerationToggle";
+import { SensitivitySlider } from "@/components/upload/SensitivitySlider";
+import { BlurSlider } from "@/components/upload/BlurSlider";
+import { DetectionPreview } from "@/components/upload/DetectionPreview";
 import { OutputPanel } from "@/components/output/OutputPanel";
 import type { PresetsMap } from "@/types";
 
@@ -19,14 +22,20 @@ export default function Home() {
     selectedPlatforms,
     moderationMode,
     watermarkText,
+    scoreThreshold,
     status,
     error,
     result,
     downloadUrl,
+    detectionPreview,
     setFile,
     togglePlatform,
     setModerationMode,
     setWatermarkText,
+    setScoreThreshold,
+    blurIntensity,
+setBlurIntensity,
+    runPreview,
     process,
     reset,
   } = useProcessor();
@@ -38,7 +47,10 @@ export default function Home() {
   }, []);
 
   const isProcessing = status === "processing";
+  const isPreviewing = status === "uploading";
   const isDone = status === "done";
+  const showPreviewButton = file && moderationMode !== "off" && !detectionPreview;
+  const showGenerateButton = file && presets && (moderationMode === "off" || detectionPreview);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -72,7 +84,7 @@ export default function Home() {
 
         {!isDone ? (
           <div className="space-y-6">
-            <DropZone onFile={setFile} previewUrl={previewUrl} disabled={isProcessing} />
+            <DropZone onFile={setFile} previewUrl={previewUrl} disabled={isProcessing || isPreviewing} />
 
             {file && presets && (
               <>
@@ -80,14 +92,50 @@ export default function Home() {
                   presets={presets}
                   selected={selectedPlatforms}
                   onToggle={togglePlatform}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isPreviewing}
                 />
 
                 <ModerationToggle
                   value={moderationMode}
                   onChange={setModerationMode}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isPreviewing}
                 />
+
+                {moderationMode !== "off" && (
+                  <SensitivitySlider
+                    value={scoreThreshold}
+                    onChange={setScoreThreshold}
+                    disabled={isProcessing || isPreviewing}
+                  />
+                )}
+                {moderationMode === "blur" && (
+              <BlurSlider
+                value={blurIntensity}
+                onChange={setBlurIntensity}
+                disabled={isProcessing || isPreviewing}
+              />
+            )}
+                {detectionPreview && previewUrl && moderationMode !== "off" && (
+                  <div className="space-y-3">
+                    <DetectionPreview
+                      imageUrl={previewUrl}
+                      detections={detectionPreview.detections}
+                      imageWidth={detectionPreview.image_width}
+                      imageHeight={detectionPreview.image_height}
+                    />
+                    {detectionPreview.detection_count === 0 && (
+                      <p className="text-sm text-stone-500 text-center">
+                        No regions detected. You can still generate with moderation on.
+                      </p>
+                    )}
+                    <button
+                      onClick={runPreview}
+                      className="w-full text-center text-xs text-stone-400 underline underline-offset-2 hover:text-stone-600"
+                    >
+                      Re-run detection
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">
@@ -98,30 +146,52 @@ export default function Home() {
                     placeholder="@yourhandle"
                     value={watermarkText}
                     onChange={(e) => setWatermarkText(e.target.value)}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isPreviewing}
                     className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
                   />
                 </div>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 
-                <button
-                  onClick={process}
-                  disabled={isProcessing || selectedPlatforms.length === 0}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? (
-                    <>
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-                      </svg>
-                      Processing…
-                    </>
-                  ) : (
-                    `Generate ${selectedPlatforms.length} image${selectedPlatforms.length !== 1 ? "s" : ""}`
-                  )}
-                </button>
+                {showPreviewButton && (
+                  <button
+                    onClick={runPreview}
+                    disabled={isPreviewing}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isPreviewing ? (
+                      <>
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                        </svg>
+                        Detecting…
+                      </>
+                    ) : (
+                      "Preview moderation"
+                    )}
+                  </button>
+                )}
+
+                {showGenerateButton && (
+                  <button
+                    onClick={process}
+                    disabled={isProcessing || selectedPlatforms.length === 0}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                        </svg>
+                        Processing…
+                      </>
+                    ) : (
+                      `Generate ${selectedPlatforms.length} image${selectedPlatforms.length !== 1 ? "s" : ""}`
+                    )}
+                  </button>
+                )}
               </>
             )}
           </div>

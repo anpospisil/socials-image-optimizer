@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * useProcessor — orchestrates the full upload → configure → process → download flow.
- *
- * Keeping all state here means components stay dumb and testable.
- * This hook is the thing we'll write Jest tests against in Phase 4.
- */
-
 import { useState, useCallback } from "react";
 import { processImage, previewModeration } from "@/lib/api";
 import type {
@@ -20,15 +13,17 @@ import type {
 
 interface ProcessorState {
   file: File | null;
-  previewUrl: string | null;          // local object URL for the image preview
+  previewUrl: string | null;
   selectedPlatforms: PlatformKey[];
   moderationMode: ModerationMode;
   watermarkText: string;
+  scoreThreshold: number;
   status: ProcessingStatus;
   error: string | null;
   result: ProcessMetadata | null;
   downloadUrl: string | null;
-  previewDetections: PreviewResponse | null;
+  detectionPreview: PreviewResponse | null;
+  blurIntensity: number;
 }
 
 const initialState: ProcessorState = {
@@ -37,18 +32,19 @@ const initialState: ProcessorState = {
   selectedPlatforms: ["bluesky_square", "twitter_square"],
   moderationMode: "off",
   watermarkText: "",
+  scoreThreshold: 0.35,
   status: "idle",
   error: null,
   result: null,
   downloadUrl: null,
-  previewDetections: null,
+  detectionPreview: null,
+  blurIntensity: 25,
 };
 
 export function useProcessor() {
   const [state, setState] = useState<ProcessorState>(initialState);
 
   const setFile = useCallback((file: File) => {
-    // Revoke previous preview URL to avoid memory leaks
     setState((prev) => {
       if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
       return {
@@ -59,7 +55,7 @@ export function useProcessor() {
         error: null,
         result: null,
         downloadUrl: null,
-        previewDetections: null,
+        detectionPreview: null,
       };
     });
   }, []);
@@ -74,28 +70,33 @@ export function useProcessor() {
   }, []);
 
   const setModerationMode = useCallback((mode: ModerationMode) => {
-    setState((prev) => ({ ...prev, moderationMode: mode }));
+    setState((prev) => ({ ...prev, moderationMode: mode, detectionPreview: null }));
   }, []);
 
   const setWatermarkText = useCallback((text: string) => {
     setState((prev) => ({ ...prev, watermarkText: text }));
   }, []);
 
+  const setScoreThreshold = useCallback((value: number) => {
+    setState((prev) => ({ ...prev, scoreThreshold: value, detectionPreview: null }));
+  }, []);
+
+const setBlurIntensity = useCallback((value: number) => {
+  setState((prev) => ({ ...prev, blurIntensity: value }));
+}, []);
+
   const runPreview = useCallback(async () => {
-    const { file, moderationMode } = state;
+    const { file, moderationMode, scoreThreshold } = state;
     if (!file || moderationMode === "off") return;
 
-    setState((prev) => ({ ...prev, status: "processing", error: null }));
+    setState((prev) => ({ ...prev, status: "uploading", error: null, detectionPreview: null }));
     try {
       const preview = await previewModeration(file, {
         platforms: ["bluesky_square"],
         moderation_mode: moderationMode,
+        score_threshold: scoreThreshold,
       });
-      setState((prev) => ({
-        ...prev,
-        status: "idle",
-        previewDetections: preview,
-      }));
+      setState((prev) => ({ ...prev, status: "idle", detectionPreview: preview }));
     } catch (e) {
       setState((prev) => ({
         ...prev,
@@ -106,7 +107,7 @@ export function useProcessor() {
   }, [state]);
 
   const process = useCallback(async () => {
-    const { file, selectedPlatforms, moderationMode, watermarkText } = state;
+    const { file, selectedPlatforms, moderationMode, watermarkText, scoreThreshold, blurIntensity } = state;
     if (!file) return;
     if (selectedPlatforms.length === 0) {
       setState((prev) => ({ ...prev, error: "Select at least one platform." }));
@@ -117,18 +118,15 @@ export function useProcessor() {
       platforms: selectedPlatforms,
       moderation_mode: moderationMode,
       watermark_text: watermarkText || undefined,
+      score_threshold: scoreThreshold,
+      blur_intensity: blurIntensity,
     };
 
     setState((prev) => ({ ...prev, status: "processing", error: null }));
 
     try {
       const { metadata, downloadUrl } = await processImage(file, config);
-      setState((prev) => ({
-        ...prev,
-        status: "done",
-        result: metadata,
-        downloadUrl,
-      }));
+      setState((prev) => ({ ...prev, status: "done", result: metadata, downloadUrl }));
     } catch (e) {
       setState((prev) => ({
         ...prev,
@@ -146,5 +144,16 @@ export function useProcessor() {
     });
   }, []);
 
-  return { ...state, setFile, togglePlatform, setModerationMode, setWatermarkText, runPreview, process, reset };
+  return {
+    ...state,
+    setFile,
+    togglePlatform,
+    setModerationMode,
+    setWatermarkText,
+    setScoreThreshold,
+    setBlurIntensity,
+    runPreview,
+    process,
+    reset,
+  };
 }
