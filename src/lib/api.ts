@@ -37,7 +37,7 @@ export async function previewModeration(
   form.append("image", file);
   form.append(
     "config",
-    JSON.stringify({ ...config, preview_only: true, platforms: ["bluesky_square"] })
+    JSON.stringify({ ...config, preview_only: true, platforms: [] })
   );
 
   const res = await fetch(`${API_BASE}/api/process`, {
