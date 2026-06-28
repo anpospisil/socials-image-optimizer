@@ -1,5 +1,6 @@
 "use client";
 
+import { useAnalytics } from "@/hooks/useAnalytics";
 import type { ProcessMetadata } from "@/types";
 
 interface OutputPanelProps {
@@ -10,6 +11,8 @@ interface OutputPanelProps {
 }
 
 export function OutputPanel({ metadata, downloadUrl, filename, onReset }: OutputPanelProps) {
+  const { trackDownloadClicked } = useAnalytics();
+ 
   return (
     <div className="space-y-5">
       {/* Summary */}
@@ -43,6 +46,7 @@ export function OutputPanel({ metadata, downloadUrl, filename, onReset }: Output
       <a
         href={downloadUrl}
         download={filename}
+        onClick={() => trackDownloadClicked(metadata.outputs.length)}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-stone-700"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

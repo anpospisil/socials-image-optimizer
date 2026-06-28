@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { processImage, previewModeration } from "@/lib/api";
 import type {
   ProcessingConfig,
@@ -44,7 +45,10 @@ const initialState: ProcessorState = {
 export function useProcessor() {
   const [state, setState] = useState<ProcessorState>(initialState);
 
+  const analytics = useAnalytics();
+
   const setFile = useCallback((file: File) => {
+    analytics.trackFileUploaded(file),
     setState((prev) => {
       if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
       return {
@@ -58,38 +62,44 @@ export function useProcessor() {
         detectionPreview: null,
       };
     });
-  }, []);
+  }, [analytics]);
 
-  const togglePlatform = useCallback((key: PlatformKey) => {
-    setState((prev) => ({
-      ...prev,
-      selectedPlatforms: prev.selectedPlatforms.includes(key)
-        ? prev.selectedPlatforms.filter((p) => p !== key)
-        : [...prev.selectedPlatforms, key],
-    }));
-  }, []);
+ const togglePlatform = useCallback((key: PlatformKey) => {
+  setState((prev) => {
+    const isSelected = prev.selectedPlatforms.includes(key);
+    const next = isSelected
+      ? prev.selectedPlatforms.filter((p) => p !== key)
+      : [...prev.selectedPlatforms, key];
+    analytics.trackPlatformSelected(key, !isSelected, next.length);
+    return { ...prev, selectedPlatforms: next };
+  });
+}, [analytics]);
 
-  const setModerationMode = useCallback((mode: ModerationMode) => {
-    setState((prev) => ({ ...prev, moderationMode: mode, detectionPreview: null }));
-  }, []);
+const setModerationMode = useCallback((mode: ModerationMode) => {
+  analytics.trackModerationToggled(mode);
+  setState((prev) => ({ ...prev, moderationMode: mode, detectionPreview: null }));
+}, [analytics]);
 
   const setWatermarkText = useCallback((text: string) => {
     setState((prev) => ({ ...prev, watermarkText: text }));
   }, []);
 
-  const setScoreThreshold = useCallback((value: number) => {
-    setState((prev) => ({ ...prev, scoreThreshold: value, detectionPreview: null }));
-  }, []);
+const setScoreThreshold = useCallback((value: number) => {
+  analytics.trackSensitivityChanged(value);
+  setState((prev) => ({ ...prev, scoreThreshold: value, detectionPreview: null }));
+}, [analytics]);
 
 const setBlurIntensity = useCallback((value: number) => {
+  analytics.trackBlurIntensityChanged(value);
   setState((prev) => ({ ...prev, blurIntensity: value }));
-}, []);
+}, [analytics]);
 
   const runPreview = useCallback(async () => {
     const { file, moderationMode, scoreThreshold } = state;
     if (!file || moderationMode === "off") return;
 
     setState((prev) => ({ ...prev, status: "uploading", error: null, detectionPreview: null }));
+    analytics.trackPreviewRun(moderationMode as "blur" | "sticker", scoreThreshold);
     try {
       const preview = await previewModeration(file, {
         platforms: ["bluesky_square"],
@@ -97,6 +107,7 @@ const setBlurIntensity = useCallback((value: number) => {
         score_threshold: scoreThreshold,
       });
       setState((prev) => ({ ...prev, status: "idle", detectionPreview: preview }));
+      analytics.trackPreviewComplete(preview.detection_count, moderationMode as "blur" | "sticker");
     } catch (e) {
       setState((prev) => ({
         ...prev,
@@ -104,7 +115,7 @@ const setBlurIntensity = useCallback((value: number) => {
         error: e instanceof Error ? e.message : "Preview failed",
       }));
     }
-  }, [state]);
+  }, [state, analytics]);
 
   const process = useCallback(async () => {
     const { file, selectedPlatforms, moderationMode, watermarkText, scoreThreshold, blurIntensity } = state;
@@ -121,20 +132,23 @@ const setBlurIntensity = useCallback((value: number) => {
       score_threshold: scoreThreshold,
       blur_intensity: blurIntensity,
     };
-
+    analytics.trackProcessingStarted(selectedPlatforms.length, moderationMode, !!watermarkText);
     setState((prev) => ({ ...prev, status: "processing", error: null }));
 
     try {
       const { metadata, downloadUrl } = await processImage(file, config);
       setState((prev) => ({ ...prev, status: "done", result: metadata, downloadUrl }));
+      analytics.trackProcessingComplete(metadata.outputs.length, metadata.detection_count, metadata.moderation_applied);
     } catch (e) {
       setState((prev) => ({
         ...prev,
         status: "error",
         error: e instanceof Error ? e.message : "Something went wrong",
+        
       }));
+      analytics.trackProcessingError(e instanceof Error ? e.message : "Unknown error");
     }
-  }, [state]);
+  }, [state, analytics]);
 
   const reset = useCallback(() => {
     setState((prev) => {
