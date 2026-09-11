@@ -3,7 +3,7 @@
 A full-stack image optimization tool that resizes and formats images for social media platforms in one pass. Built as a portfolio project to demonstrate production-grade frontend architecture, analytics implementation, and cross-service system design.
 
 **Live demo:** https://socials-image-optimizer.vercel.app  
-**API:** https://image-optimizer-api-production-3dda.up.railway.app/docs
+**API:** https://image-optimizer-api-0r7m.onrender.com/docs
 
 ---
 
