@@ -8,8 +8,11 @@ export type PlatformKey =
   | "bluesky_landscape"
   | "twitter_square"
   | "twitter_landscape"
-  | "pixiv"
-  | "fanbox";
+  | "instagram_square"
+  | "instagram_portrait"
+  | "instagram_story"
+  | "facebook_square"
+  | "facebook_landscape";
 
 export interface PlatformPreset {
   label: string;

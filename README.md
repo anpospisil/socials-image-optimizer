@@ -9,7 +9,7 @@ A full-stack image optimization tool that resizes and formats images for social 
 
 ## What it does
 
-Upload an image once and generate platform-optimized outputs for Bluesky, Twitter/X, Pixiv, and Fanbox simultaneously — correct dimensions, aspect ratios, and file sizes per platform. Optional watermarking included.
+Upload an image once and generate platform-optimized outputs for Bluesky, Twitter/X, Instagram and Facebook simultaneously — correct dimensions, aspect ratios, and file sizes per platform. Optional watermarking included.
 
 ---
 

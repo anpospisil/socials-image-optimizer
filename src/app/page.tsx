@@ -71,7 +71,7 @@ setBlurIntensity,
             Resize for every platform,<br />in one go.
           </h1>
           <p className="text-sm text-stone-500">
-            Upload once. Get perfectly sized images for Bluesky, Twitter, Pixiv, and Fanbox — with optional content moderation built in.
+            Upload once. Get perfectly sized images for Bluesky, Twitter, Instagram, and Facebook — with optional content moderation built in.
           </p>
         </div>
 

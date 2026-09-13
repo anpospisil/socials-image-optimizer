@@ -54,10 +54,10 @@ describe("useProcessor", () => {
 
   it("toggles platform on and off", () => {
     const { result } = renderHook(() => useProcessor());
-    act(() => { result.current.togglePlatform("pixiv"); });
-    expect(result.current.selectedPlatforms).toContain("pixiv");
-    act(() => { result.current.togglePlatform("pixiv"); });
-    expect(result.current.selectedPlatforms).not.toContain("pixiv");
+    act(() => { result.current.togglePlatform("instagram_square"); });
+    expect(result.current.selectedPlatforms).toContain("instagram_square");
+    act(() => { result.current.togglePlatform("instagram_square"); });
+    expect(result.current.selectedPlatforms).not.toContain("instagram_square");
   });
 
   it("clears detection preview when moderation mode changes", () => {
@@ -75,7 +75,7 @@ describe("useProcessor", () => {
   it("resets to initial state", () => {
     const { result } = renderHook(() => useProcessor());
     act(() => { result.current.setFile(mockFile); });
-    act(() => { result.current.togglePlatform("pixiv"); });
+    act(() => { result.current.togglePlatform("instagram_square"); });
     act(() => { result.current.reset(); });
     expect(result.current.file).toBeNull();
     expect(result.current.selectedPlatforms).toEqual(["bluesky_square", "twitter_square"]);
