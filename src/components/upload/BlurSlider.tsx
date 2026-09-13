@@ -33,7 +33,7 @@ function BlurPreview({ intensity }: { intensity: number }) {
     ctx.font = "48px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("🍆", size / 2, size / 2);
+    ctx.fillText("💁", size / 2, size / 2);
 
     // Blur it onto a second canvas
     const blurCanvas = document.createElement("canvas");
