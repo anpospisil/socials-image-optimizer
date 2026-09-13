@@ -9,7 +9,7 @@ A full-stack image optimization tool that resizes and formats images for social 
 
 ## What it does
 
-Upload an image once and generate platform-optimized outputs for Bluesky, Twitter/X, Instagram and Facebook simultaneously — correct dimensions, aspect ratios, and file sizes per platform. Optional watermarking included and content safety filtering (configurable sensitivity, blur/redaction modes) included.
+Upload an image once and generate platform-optimized outputs for Bluesky, Twitter/X, Instagram and Facebook simultaneously — correct dimensions, aspect ratios, and file sizes per platform. Optional watermarking and content safety filtering (configurable sensitivity, blur/redaction modes) included.
 
 ---
 
@@ -30,12 +30,14 @@ The frontend is a Next.js App Router application with all state and API logic ce
 - TypeScript
 - Tailwind CSS
 - Google Tag Manager + GA4 (typed event schema)
+- Jest + React Testing Library
 
 **Backend**
 - FastAPI (Python)
 - PIL / Pillow for image processing
 - OpenCV for image manipulation
-- Deployed on Railway via Dockerfile
+- dghs-imgutils for image classification
+- Deployed on Render via Dockerfile
 
 ---
 
@@ -95,7 +97,7 @@ Backend (separate terminal):
 ## Project status
 
 - ✅ Phase 1 — FastAPI service + Next.js scaffold
-- ✅ Phase 2 — Platform presets, moderation toggle, detection preview
+- ✅ Phase 2 — Platform presets, content safety filtering, detection preview
 - ✅ Phase 3 — GTM + GA4 analytics layer
 - ✅ Phase 4 — Jest unit tests
 - 🔄 Phase 5 — Playwright E2E tests + Lighthouse CI
