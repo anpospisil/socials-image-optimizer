@@ -15,7 +15,7 @@ Upload an image once and generate platform-optimized outputs for Bluesky, Twitte
 
 ## Architecture
 
-Two independently deployed services sharing a typed contract. The Next.js frontend (Vercel) communicates via HTTP multipart with the FastAPI image processing service (Railway).
+Two independently deployed services sharing a typed contract. The Next.js frontend (Vercel) communicates via HTTP multipart with the FastAPI image processing service (Render).
 
 The backend wraps a Python image processing pipeline (PIL, OpenCV) behind a REST API rather than rewriting it in Node. This decision is documented in [ADR #1](docs/decisions/ADR-001-fastapi-wrapper.md) — rewriting correct, working code introduces risk with no functional gain.
 
